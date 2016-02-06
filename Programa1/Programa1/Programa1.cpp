@@ -20,13 +20,13 @@ class claseB
 {
 
 	public:
-		static int calling_function(int param)
+		static void calling_function(int (claseB::*&mem)(int))
 		{
-			return function(param);
+			mem = &function;
 		}
 
 	private:
-		static int function(int param)
+		int function(int param)
 		{
 			printf("Funcion 3: privada en clase B\n");
 			printf(" - Se mando el valor: %d\n", param);
@@ -46,18 +46,19 @@ int main()
 
 	int(*PrimerCallback) (int);
 	int(*SegundoCallback) (int);
-	int(*TercerCallback) (int);
+	int(claseB::*TercerCallback) (int);
 
 	PrimerCallback = &function;
 	PrimerCallback(10);
 
-	claseA clase1;
-	SegundoCallback = &clase1.function;
+	SegundoCallback = &claseA::function;
 	SegundoCallback(20);
 
-	claseB clase2;
-	TercerCallback = &clase2.calling_function;
-	TercerCallback(30);
+	claseB::calling_function(TercerCallback);
+	claseB *objeto = new claseB();
+	(objeto->*TercerCallback)(30);
+	
+	
 	
     return 0;
 }
