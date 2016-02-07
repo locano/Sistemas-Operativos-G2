@@ -1,0 +1,3 @@
+﻿C:\Program Files\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(392,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (Homework1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  main.cpp
+  Homework1.vcxproj -> C:\Users\ludwi\Documents\GitHub\SO-G2-Q\Sistemas-Operativos-G2\Testing\Homework2\Debug\Proyecto 2.exe
