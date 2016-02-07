@@ -41,6 +41,42 @@ static int function(int param)
 	return param;
 }
 
+
+void initializateArray(void *theArray[])
+{
+	for (int i = 0; i < 10; i++)
+	{
+		theArray[i] = NULL;
+	}
+}
+
+void setPosition(int (*param)(int),void *theArray[]) {
+
+	for (int i = 0; i < 10; i++)
+	{
+		if (theArray[i] == NULL) {
+			theArray[i] = param;
+			return;
+		}
+	}
+}
+
+void recorreVector(void *theArray[])
+{
+	int(*auxCallback) (int);
+	for (int i = 0; i < 10; i++)
+	{
+		if (theArray[i] != NULL)
+		{
+			auxCallback = (int(*)(int))theArray[i];
+			auxCallback((i+1) * 10);
+			theArray[i] = NULL;
+		}
+	}
+}
+
+void *vector[10];
+
 int main()
 {
 
@@ -48,19 +84,25 @@ int main()
 	int(*SegundoCallback) (int);
 	int(claseB::*TercerCallback) (int);
 
-	PrimerCallback = &function;
+	/*PrimerCallback = &function;
 	PrimerCallback(10);
 
 	SegundoCallback = &claseA::function;
 	SegundoCallback(20);
-
+	
 	claseB::calling_function(TercerCallback);
 	claseB *objeto = new claseB();
 	(objeto->*TercerCallback)(30);
+	*/
+	initializateArray(vector);
 	
-	
-	
+	setPosition(&function,vector);
+	setPosition(&claseA::function,vector);
+
+	recorreVector(vector);
+	//setPosition(&function);
+	//PrimerCallback = (int(*)(int))vector[0];
+	//PrimerCallback(11);
+
     return 0;
 }
-
-
