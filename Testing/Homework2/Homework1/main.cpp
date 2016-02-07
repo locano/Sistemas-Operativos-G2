@@ -37,8 +37,9 @@ private:
 };
 
 
-
 /* From this part start the second proyect were we can see the implementation of PCB*/
+
+void *vector[10]; //Array of 10 pointers
 
 void initializateArray(void *theArray[])
 {
@@ -72,12 +73,6 @@ void searchInVector(void *theArray[])
 		}
 	}
 }
-
-void *vector[10]; //Array of 10 pointers
-
-
-//Method 2
-
 
 void PCB_Calling(int(*Callback1) (int), int(*Callback2) (int), int(Class_2::*Callback3) (int)){
 
