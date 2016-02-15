@@ -76,7 +76,7 @@ class PCB {
 	public:
 		int* puntero;
 		int state;
-		PCB* siguiente;
+		PCB* siguiente; //siguiente
 
 	//Función que retorna el ID
 	int returnID()
