@@ -76,6 +76,7 @@ class PCB {
 	public:
 		int* puntero;
 		int state;
+		PCB* siguiente;
 
 	//Función que retorna el ID
 	int returnID()
@@ -89,6 +90,10 @@ class PCB {
 
 	int returnProcessState() {
 		return ProcessState;
+	}
+
+	PCB* getNext(){
+		return siguiente;
 	}
 
 	#pragma region Constructor y Destructor
@@ -111,6 +116,42 @@ class PCB {
 };
 //----------------------------------------------------------
 
+//-----------------------Lista circular--------------------
+class lista{
+	private:
+		PCB* actual;
+	public:
+		lista(){
+			actual = NULL;
+		}
+	void insertar(PCB* nodo){
+		if (actual = NULL)
+			actual = nodo;
+		else nodo->siguiente = actual->siguiente;
+
+		actual->siguiente = nodo;
+	}
+	void eliminar(int indice){
+		PCB* Aux = actual, *Anterior; int iterador = 0;
+		while (iterador < indice)
+		{
+			Anterior = Aux;
+			Aux = Aux->siguiente;
+			iterador++;
+		}
+
+		if (Aux == Aux->siguiente)
+			actual = NULL;
+		else
+			Anterior->siguiente = Aux->siguiente;
+	}
+
+	void eliminar_todos(){
+		actual = NULL;
+	}
+};
+
+//----------------------------------------------------------
 
 //-----------------------Clase-Kernel-----------------------
 class kernel {
