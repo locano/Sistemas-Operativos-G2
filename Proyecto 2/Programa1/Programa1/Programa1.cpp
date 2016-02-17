@@ -3,10 +3,29 @@
 
 #include "stdafx.h"
 #include <iostream>
+#include <string>
 using namespace std;
 
-
+//Define size
+//
 #define v_size 10 //Tamaño del vector
+
+//Define Process Control States
+#define s_running 1 //En ejecucion
+#define s_suspended 2 //Suspendido
+#define s_blocked 3 //Bloqueado
+#define s_ready 4 //Listo para la ejecucion
+#define s_ready_and_suspend  5 //Listo y suspendido
+#define s_blocked_and_suspend 6 //Bloqueado y suspendido
+#define s_waiting 7 //En espera
+#define s_done 8 //Terminado
+
+
+//Define CPU states
+#define available 1 //Espacio dispobible
+#define not_available 2 //Y ano hay espacio
+#define out_of_range 3 //fuera del limite del espacio
+
 
 //------------------------Funciones-------------------------
 class claseA
@@ -24,7 +43,7 @@ class claseB
 {
 
 public:
-	static void claseB::calling_function(int(*&mem)(int))
+	static void calling_function(int(*&mem)(int))
 	{
 		mem = &function;
 	}
@@ -52,9 +71,11 @@ static int function(int param)
 class PCB {
 	private:
 		int ID;
+		int ProcessState;
 
 	public:
 		int* puntero;
+		int state;
 
 	//Función que retorna el ID
 	int returnID()
@@ -62,11 +83,20 @@ class PCB {
 		return ID;
 	}
 
+	int returnState() {
+		return state;
+	}
+
+	int returnProcessState() {
+		return ProcessState;
+	}
+
 	#pragma region Constructor y Destructor
 	//Constructor para funciones 1 y 2
-	PCB(int newId, int* pointer)
+	PCB(int newId, int newstate ,int* pointer)
 	{
 		ID = newId;
+		state = newstate;
 		puntero = pointer;
 	}
 
@@ -74,6 +104,7 @@ class PCB {
 	~PCB()
 	{
 		ID = 0;
+		state = available;
 		puntero = NULL;
 	}
 	#pragma endregion
@@ -108,12 +139,22 @@ class kernel {
 		//Método que ejecuta PCB específico
 		void runFunction(PCB *actPCB)
 		{
-
+			
+			actPCB->state = s_waiting;
+			printf("Su estado actual es %d\n", actPCB->returnState()); 			
+			getchar();
 			int *puntero = actPCB->puntero;
+			actPCB->state = s_running;
 			int(*callback) (int);
 			printf("El PCB ejecutado fue el numero %d\n", actPCB->returnID());
+			printf("Su estado actual es %d\n", actPCB->returnState());
 			callback = (int(*)(int))*(&puntero);
-			callback(1); //Ejecuta función
+			callback(1); //Ejecuta función			
+			getchar();
+			actPCB->state = s_done;
+			printf("Su estado actual es %d\n", actPCB->returnState());
+			getchar();
+			
 			printf("\n");
 		}
 		#pragma endregion
@@ -152,7 +193,7 @@ class kernel {
 				if (PCB_count <= 10)
 				{
 					int first = firstAvailable() + 1; //Toma 1er espacio NULL disponible
-					PCB *newPCB = new PCB(first, callback); //Crea PCB
+					PCB *newPCB = new PCB(first, not_available, callback); //Crea PCB
 					pcbList[first - 1] = newPCB; //Lo agrega a lista
 					PCB_count++;
 				}
@@ -171,7 +212,7 @@ class kernel {
 				{
 					if (pcbList[index] == NULL)
 					{
-						PCB *newPCB = new PCB(index + 1, callback); //Crea PCB
+						PCB *newPCB = new PCB(index + 1,not_available, callback); //Crea PCB
 						pcbList[index] = newPCB; //Lo agrega a lista
 						PCB_count++;
 					}
@@ -227,7 +268,9 @@ class kernel {
 				{
 					PCB *act = pcbList[index];
 					if (act != NULL)
+						
 						runFunction(act); //Corre PCB
+						
 				}
 				else
 					printf("Error. indice no esta dentro del rango [0..%d]\n", v_size);
@@ -238,10 +281,14 @@ class kernel {
 			*/
 			void runAllFunctions()
 			{
-				for (int i = 0; i < v_size; i++)
+				for (int i = 0; i < PCB_count; i++)
 				{
 					runFunction_Index(i);
-					deletePCB(i); //Borra PCB
+				}
+
+				for (int j = 0; j < PCB_count; j++)
+				{
+					deletePCB(j); //Borra PCB
 				}
 			}
 
