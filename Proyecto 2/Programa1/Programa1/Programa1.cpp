@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include <iostream>
 #include <string>
+#include <Windows.h>
 using namespace std;
 
 //Define size
@@ -11,20 +12,24 @@ using namespace std;
 #define v_size 10 //Tamaño del vector
 
 //Define Process Control States
-#define s_running 1 //En ejecucion
-#define s_suspended 2 //Suspendido
-#define s_blocked 3 //Bloqueado
-#define s_ready 4 //Listo para la ejecucion
-#define s_ready_and_suspend  5 //Listo y suspendido
-#define s_blocked_and_suspend 6 //Bloqueado y suspendido
-#define s_waiting 7 //En espera
-#define s_done 8 //Terminado
-
+#define s_running 0 //En ejecucion
+#define s_suspended 1 //Suspendido
+#define s_blocked 2 //Bloqueado
+#define s_ready 3 //Listo para la ejecucion
+#define s_ready_and_suspend  4 //Listo y suspendido
+#define s_blocked_and_suspend 5 //Bloqueado y suspendido
+#define s_waiting 6 //En espera
+#define s_done 7 //Terminado
 
 //Define CPU states
-#define available 1 //Espacio dispobible
-#define not_available 2 //Y ano hay espacio
-#define out_of_range 3 //fuera del limite del espacio
+#define available 8 //Espacio dispobible
+#define not_available 9 //Ya no hay espacio
+#define out_of_range 10 //fuera del limite del espacio
+#define s_delete 11 //Terminado
+
+string ProcessName[12] = {"Corriendo","Suspendido","Bloqueado", "Listo","Listo y Suspendido","Bloqueado y Suspendido", "En Espera", "Terminado",
+"Disponible","No Disponible", "Fuera de Limite", "Eliminado"
+};
 
 
 //------------------------Funciones-------------------------
@@ -70,12 +75,22 @@ static int function(int param)
 //------------------------Clase-PCB-------------------------
 class PCB {
 	private:
-		int ID;
-		int ProcessState;
-
-	public:
-		int* puntero;
+		int ID;  
 		int state;
+	public:
+		int ProcessState; //Describe en que proceso se encuentra el PCB	
+		int* puntero;	// Almacena el valor de la direccion del callback a realizar.
+				// Tiene el tipo de estado actualmente en el CPU.
+		PCB* siguiente; // Apuntador asia siguiente PCB
+
+
+		void setState(int state) {
+			this->state = state;
+		}
+
+		void setProcess(int pross) {
+			this->ProcessState = pross;
+		}
 
 	//Función que retorna el ID
 	int returnID()
@@ -84,11 +99,15 @@ class PCB {
 	}
 
 	int returnState() {
-		return state;
+		return state; //devuelve estado en el CPU
 	}
 
 	int returnProcessState() {
-		return ProcessState;
+		return ProcessState; //Devuelve estado del proceso.
+	}
+
+	PCB* getNext(){
+		return siguiente;
 	}
 
 	#pragma region Constructor y Destructor
@@ -111,65 +130,127 @@ class PCB {
 };
 //----------------------------------------------------------
 
+//-----------------------Lista circular--------------------
+class lista{
+	private:
+		PCB* actual;
+	
+	public:
+		lista(){
+			actual = NULL;
+		}
+	
+		void insertar(PCB* nodo){
+			if (actual == NULL)
+				actual = nodo;
+			else nodo->siguiente = actual->siguiente;
+
+			actual->siguiente = nodo;
+		}
+
+		void eliminar(int contPCB, int ID){
+			PCB* Aux = actual, *Anterior = Aux; int iterador = 0;
+			bool salir = false;
+			while (iterador < contPCB && !salir)
+			{
+				Anterior = Aux;
+				Aux = Aux->siguiente;
+				if (Aux->returnID() == ID)
+					salir = true;
+				iterador++;
+			}
+
+			if (salir) //Encontró el PCB
+			{
+				if (Aux == Aux->siguiente) {					
+					
+					
+					actual->ProcessState = s_delete;
+					cout << "El Estado del PCB es: " + ProcessName[actual->returnProcessState()] << endl;
+					cout << "Apache una tecla para terminar proceso" << endl;
+					getchar(); 
+					actual = NULL;
+				}
+				else
+				{
+					actual->ProcessState = s_delete;
+					cout << "El Estado del PCB es: " + ProcessName[actual->returnProcessState()] << endl;
+					cout << "Apache una tecla para continuar con el otro proceso proceso" << endl;
+					getchar();
+					Anterior->siguiente = Aux->siguiente;
+					actual = Anterior;
+					
+				}	
+				
+			}
+			else
+				printf("El PCB %d no ha sido encontrado.", ID);
+		}
+
+	void eliminar_todos(){
+		actual = NULL;
+	}
+
+	PCB* tomaPCB()
+	{
+		return actual;
+	}
+};
+
+//----------------------------------------------------------
 
 //-----------------------Clase-Kernel-----------------------
 class kernel {
 	private:
+		int PCB_ID;
 
 		#pragma region Métodos privados
-		void initializateArray()
-		{
-			for (int i = 0; i < v_size; i++)
-				if (pcbList[i] != NULL)
-					pcbList[i] = NULL;
-		}
 
-		//Función que retorna primera celda disponible
-		int firstAvailable()
-		{
-			int cont = 0;
-			while (cont < v_size)
-			{
-				if (pcbList[cont] == NULL)
-					return cont; else
-					cont++;
-			}
+		//Establece los estados segun su ejecucion.
+		void setProcessStates(PCB *actPCB, int state,int delay) {
+			actPCB->setProcess(state);
+			cout<< "Su estado actual es: " + ProcessName[actPCB->returnProcessState()]<<endl;
+			Sleep(delay);
+			//https://ccodigo.wordpress.com/tag/time/
 		}
-
-		//Método que ejecuta PCB específico
+		
+		//Ejecuta la ejecucion individual del PCB
 		void runFunction(PCB *actPCB)
 		{
+			//Inicia Espera para ejecutar
+			setProcessStates(actPCB, s_waiting,3000);			
 			
-			actPCB->state = s_waiting;
-			printf("Su estado actual es %d\n", actPCB->returnState()); 			
-			getchar();
+			//Inicia proceso de ejecucion
+			setProcessStates(actPCB, s_running,2000);
 			int *puntero = actPCB->puntero;
-			actPCB->state = s_running;
 			int(*callback) (int);
 			printf("El PCB ejecutado fue el numero %d\n", actPCB->returnID());
-			printf("Su estado actual es %d\n", actPCB->returnState());
 			callback = (int(*)(int))*(&puntero);
-			callback(1); //Ejecuta función			
-			getchar();
-			actPCB->state = s_done;
-			printf("Su estado actual es %d\n", actPCB->returnState());
-			getchar();
-			
+			callback(1); //Ejecuta función		
+
+			//Establece el final de la ejecucion
+			setProcessStates(actPCB, s_done,2000);
+						
+			//Borrarlo después de correrlo
+			deletePCB(actPCB->returnID()); //Borra PCB
+			//-----------------------------
 			printf("\n");
 		}
+		
 		#pragma endregion
 
 	public:
-		PCB *pcbList[v_size]; //Vector de 10 posiciones
 		int PCB_count;
-
+		lista *PCB_list;
 		#pragma region Constructor y Destructores
 
 			//Constructor del kernel
-			kernel()
+
+		kernel()
 			{
 				PCB_count = 0;
-				initializateArray(); //Vuelve todo NULL
+				PCB_list = new lista();
+				PCB_ID = 1;
 			}
 
 			//"Destructor del kernel"
@@ -184,65 +265,44 @@ class kernel {
 		#pragma region Métodos para agregar PCB
 
 			/*
-			Método que agrega un puntero y lo convierte
-			en PCB. Luego, este lo ingresa en la lista en
-			la primera posición disponible.
+				Método que agrega un PCB a lista circular.
 			*/
-			void addToAvailable(int *callback)
+			void addPCB(int *callback)
 			{
-				if (PCB_count <= 10)
+				if (PCB_count < v_size)
 				{
-					int first = firstAvailable() + 1; //Toma 1er espacio NULL disponible
-					PCB *newPCB = new PCB(first, not_available, callback); //Crea PCB
-					pcbList[first - 1] = newPCB; //Lo agrega a lista
+
+					PCB_list->insertar(new PCB(PCB_ID, available, callback)); //Agrega PCB a lista
+
+					//Permite decir que se ingreso y su estado actual en el CPU
+					//cout<<"El estado en el CPU actual es: "  +ProcessName[PCB_list->tomaPCB()->returnState()]<<endl;
+					
+
 					PCB_count++;
+					PCB_ID++;
 				}
 				else
 					printf("Error. No se permiten mas procesos");
-			}
-
-			/*
-			Método que agrega un puntero y lo convierte
-			en PCB. Luego, este lo ingresa en la lista en
-			la posición index.
-			*/
-			void addToIndex(int *callback, int index)
-			{
-				if (index >= 0 && index < v_size)
-				{
-					if (pcbList[index] == NULL)
-					{
-						PCB *newPCB = new PCB(index + 1,not_available, callback); //Crea PCB
-						pcbList[index] = newPCB; //Lo agrega a lista
-						PCB_count++;
-					}
-					else
-						printf("Error. La posicion %d ya esta ocupada", index);
-				}
-				else
-					printf("Error. Indice no esta dentro del rango [0..%d]\n", v_size);
 			}
 		#pragma endregion
 
 		#pragma region Métodos para quitar PCB
 
-			/*
-			Método que borra un PCB en una posición
-			específica.
-			*/
-			void deletePCB(int index)
+			void deletePCB(int ID)
 			{
-				if (index >= 0 && index < v_size)
+				bool founded = false;
+				int cont = 0;
+				PCB *actPCB = NULL;
+				while (!founded && cont < PCB_count) //Busca el PCB. Al encontrarlo se sale del ciclo
 				{
-					if (pcbList[index] != NULL) //Si es != null, borra PCB
-					{
-						PCB_count--;
-						pcbList[index]->~PCB(); //Utiliza destructor
-						pcbList[index] = NULL; //Es necesario?
-					}
+					actPCB = PCB_list->tomaPCB();
+					if (actPCB->returnID() == ID) //Si es igual al que se está buscando...
+						founded = true; else
+						cont++;
 				}
-				else
-					printf("Error. Índice no está dentro del rango [0..%d]\n", v_size);;
+				if (founded)
+					PCB_list->eliminar(PCB_count, ID); else
+					printf("El PCB %d no ha sido encontrado\n", ID);
 			}
 
 			/*
@@ -251,8 +311,7 @@ class kernel {
 			*/
 			void delete_ALL_PCB()
 			{
-				for (int i = 0; i < v_size; i++)
-					deletePCB(i);
+				PCB_list->eliminar_todos();
 			}
 
 		#pragma endregion
@@ -260,35 +319,37 @@ class kernel {
 		#pragma region Métodos para correr PCB
 			
 			/*
-				Método que corre un PCB en una posición index.
+			Método que busca un PCB por ID. Si lo encuentra
+			lo ejecuta. Si no,
 			*/
-			void runFunction_Index(int index)
+			void runPCB(int ID)
 			{
-				if (index >= 0 && index < v_size)
+				bool founded = false;
+				int cont = 0;
+				PCB *actPCB = NULL;
+				while (!founded && cont < PCB_count) //Busca el PCB. Al encontrarlo se sale del ciclo
 				{
-					PCB *act = pcbList[index];
-					if (act != NULL)
-						
-						runFunction(act); //Corre PCB
-						
+					actPCB = PCB_list->tomaPCB();
+					if (actPCB->returnID() == ID) //Si es igual al que se está buscando...
+						founded = true; else
+						cont++;
 				}
+				if (founded) //Si encuentra el PCB lo ejecuta
+					runFunction(actPCB); //Corre PCB
 				else
-					printf("Error. indice no esta dentro del rango [0..%d]\n", v_size);
+					printf("El PCB %d no ha sido encontrado\n", ID);
 			}
 
 			/*
-				Método que corre todos los PCB en lista
+			Método que corre todos los PCB
 			*/
-			void runAllFunctions()
+			void runAllPCB()
 			{
+				PCB *actPCB;
 				for (int i = 0; i < PCB_count; i++)
 				{
-					runFunction_Index(i);
-				}
-
-				for (int j = 0; j < PCB_count; j++)
-				{
-					deletePCB(j); //Borra PCB
+					actPCB = PCB_list->tomaPCB();
+					runFunction(actPCB);
 				}
 			}
 
@@ -303,11 +364,11 @@ int main()
 	claseB::calling_function(privado);
 	kernel *newKernel = new kernel();
 
-	newKernel->addToAvailable((int*)&function);
-	newKernel->addToAvailable((int*)&claseA::function);
-	newKernel->addToAvailable((int*)privado);
-	newKernel->runAllFunctions();
-	newKernel->~kernel();
+	newKernel->addPCB((int*)&function);
+	newKernel->addPCB((int*)&claseA::function);
+	newKernel->addPCB((int*)privado);
+	newKernel->runAllPCB();
+	//newKernel->~kernel();
 	#pragma endregion
 
 	#pragma region Proyecto 1
