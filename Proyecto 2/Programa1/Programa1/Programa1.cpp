@@ -4,7 +4,10 @@
 #include "stdafx.h"
 #include <iostream>
 #include <string>
+<<<<<<< HEAD
 #include <Windows.h>
+=======
+>>>>>>> refs/remotes/origin/master
 using namespace std;
 
 //Define size
@@ -12,6 +15,7 @@ using namespace std;
 #define v_size 10 //Tamaño del vector
 
 //Define Process Control States
+<<<<<<< HEAD
 #define s_running 0 //En ejecucion
 #define s_suspended 1 //Suspendido
 #define s_blocked 2 //Bloqueado
@@ -30,6 +34,22 @@ using namespace std;
 string ProcessName[12] = {"Corriendo","Suspendido","Bloqueado", "Listo","Listo y Suspendido","Bloqueado y Suspendido", "En Espera", "Terminado",
 "Disponible","No Disponible", "Fuera de Limite", "Eliminado"
 };
+=======
+#define s_running 1 //En ejecucion
+#define s_suspended 2 //Suspendido
+#define s_blocked 3 //Bloqueado
+#define s_ready 4 //Listo para la ejecucion
+#define s_ready_and_suspend  5 //Listo y suspendido
+#define s_blocked_and_suspend 6 //Bloqueado y suspendido
+#define s_waiting 7 //En espera
+#define s_done 8 //Terminado
+
+
+//Define CPU states
+#define available 1 //Espacio dispobible
+#define not_available 2 //Y ano hay espacio
+#define out_of_range 3 //fuera del limite del espacio
+>>>>>>> refs/remotes/origin/master
 
 
 //------------------------Funciones-------------------------
@@ -75,6 +95,7 @@ static int function(int param)
 //------------------------Clase-PCB-------------------------
 class PCB {
 	private:
+<<<<<<< HEAD
 		int ID;  
 		int state;
 	public:
@@ -91,6 +112,14 @@ class PCB {
 		void setProcess(int pross) {
 			this->ProcessState = pross;
 		}
+=======
+		int ID;
+		int ProcessState;
+
+	public:
+		int* puntero;
+		int state;
+>>>>>>> refs/remotes/origin/master
 
 	//Función que retorna el ID
 	int returnID()
@@ -99,6 +128,7 @@ class PCB {
 	}
 
 	int returnState() {
+<<<<<<< HEAD
 		return state; //devuelve estado en el CPU
 	}
 
@@ -108,6 +138,13 @@ class PCB {
 
 	PCB* getNext(){
 		return siguiente;
+=======
+		return state;
+	}
+
+	int returnProcessState() {
+		return ProcessState;
+>>>>>>> refs/remotes/origin/master
 	}
 
 	#pragma region Constructor y Destructor
@@ -130,6 +167,7 @@ class PCB {
 };
 //----------------------------------------------------------
 
+<<<<<<< HEAD
 //-----------------------Lista circular--------------------
 class lista{
 	private:
@@ -198,10 +236,13 @@ class lista{
 };
 
 //----------------------------------------------------------
+=======
+>>>>>>> refs/remotes/origin/master
 
 //-----------------------Clase-Kernel-----------------------
 class kernel {
 	private:
+<<<<<<< HEAD
 		int PCB_ID;
 
 		#pragma region Métodos privados
@@ -251,6 +292,63 @@ class kernel {
 				PCB_count = 0;
 				PCB_list = new lista();
 				PCB_ID = 1;
+=======
+
+		#pragma region Métodos privados
+		void initializateArray()
+		{
+			for (int i = 0; i < v_size; i++)
+				if (pcbList[i] != NULL)
+					pcbList[i] = NULL;
+		}
+
+		//Función que retorna primera celda disponible
+		int firstAvailable()
+		{
+			int cont = 0;
+			while (cont < v_size)
+			{
+				if (pcbList[cont] == NULL)
+					return cont; else
+					cont++;
+			}
+		}
+
+		//Método que ejecuta PCB específico
+		void runFunction(PCB *actPCB)
+		{
+			
+			actPCB->state = s_waiting;
+			printf("Su estado actual es %d\n", actPCB->returnState()); 			
+			getchar();
+			int *puntero = actPCB->puntero;
+			actPCB->state = s_running;
+			int(*callback) (int);
+			printf("El PCB ejecutado fue el numero %d\n", actPCB->returnID());
+			printf("Su estado actual es %d\n", actPCB->returnState());
+			callback = (int(*)(int))*(&puntero);
+			callback(1); //Ejecuta función			
+			getchar();
+			actPCB->state = s_done;
+			printf("Su estado actual es %d\n", actPCB->returnState());
+			getchar();
+			
+			printf("\n");
+		}
+		#pragma endregion
+
+	public:
+		PCB *pcbList[v_size]; //Vector de 10 posiciones
+		int PCB_count;
+
+		#pragma region Constructor y Destructores
+
+			//Constructor del kernel
+			kernel()
+			{
+				PCB_count = 0;
+				initializateArray(); //Vuelve todo NULL
+>>>>>>> refs/remotes/origin/master
 			}
 
 			//"Destructor del kernel"
@@ -265,6 +363,7 @@ class kernel {
 		#pragma region Métodos para agregar PCB
 
 			/*
+<<<<<<< HEAD
 				Método que agrega un PCB a lista circular.
 			*/
 			void addPCB(int *callback)
@@ -280,14 +379,54 @@ class kernel {
 
 					PCB_count++;
 					PCB_ID++;
+=======
+			Método que agrega un puntero y lo convierte
+			en PCB. Luego, este lo ingresa en la lista en
+			la primera posición disponible.
+			*/
+			void addToAvailable(int *callback)
+			{
+				if (PCB_count <= 10)
+				{
+					int first = firstAvailable() + 1; //Toma 1er espacio NULL disponible
+					PCB *newPCB = new PCB(first, not_available, callback); //Crea PCB
+					pcbList[first - 1] = newPCB; //Lo agrega a lista
+					PCB_count++;
+>>>>>>> refs/remotes/origin/master
 				}
 				else
 					printf("Error. No se permiten mas procesos");
 			}
+<<<<<<< HEAD
+=======
+
+			/*
+			Método que agrega un puntero y lo convierte
+			en PCB. Luego, este lo ingresa en la lista en
+			la posición index.
+			*/
+			void addToIndex(int *callback, int index)
+			{
+				if (index >= 0 && index < v_size)
+				{
+					if (pcbList[index] == NULL)
+					{
+						PCB *newPCB = new PCB(index + 1,not_available, callback); //Crea PCB
+						pcbList[index] = newPCB; //Lo agrega a lista
+						PCB_count++;
+					}
+					else
+						printf("Error. La posicion %d ya esta ocupada", index);
+				}
+				else
+					printf("Error. Indice no esta dentro del rango [0..%d]\n", v_size);
+			}
+>>>>>>> refs/remotes/origin/master
 		#pragma endregion
 
 		#pragma region Métodos para quitar PCB
 
+<<<<<<< HEAD
 			void deletePCB(int ID)
 			{
 				bool founded = false;
@@ -303,6 +442,25 @@ class kernel {
 				if (founded)
 					PCB_list->eliminar(PCB_count, ID); else
 					printf("El PCB %d no ha sido encontrado\n", ID);
+=======
+			/*
+			Método que borra un PCB en una posición
+			específica.
+			*/
+			void deletePCB(int index)
+			{
+				if (index >= 0 && index < v_size)
+				{
+					if (pcbList[index] != NULL) //Si es != null, borra PCB
+					{
+						PCB_count--;
+						pcbList[index]->~PCB(); //Utiliza destructor
+						pcbList[index] = NULL; //Es necesario?
+					}
+				}
+				else
+					printf("Error. Índice no está dentro del rango [0..%d]\n", v_size);;
+>>>>>>> refs/remotes/origin/master
 			}
 
 			/*
@@ -311,7 +469,12 @@ class kernel {
 			*/
 			void delete_ALL_PCB()
 			{
+<<<<<<< HEAD
 				PCB_list->eliminar_todos();
+=======
+				for (int i = 0; i < v_size; i++)
+					deletePCB(i);
+>>>>>>> refs/remotes/origin/master
 			}
 
 		#pragma endregion
@@ -319,6 +482,7 @@ class kernel {
 		#pragma region Métodos para correr PCB
 			
 			/*
+<<<<<<< HEAD
 			Método que busca un PCB por ID. Si lo encuentra
 			lo ejecuta. Si no,
 			*/
@@ -350,6 +514,37 @@ class kernel {
 				{
 					actPCB = PCB_list->tomaPCB();
 					runFunction(actPCB);
+=======
+				Método que corre un PCB en una posición index.
+			*/
+			void runFunction_Index(int index)
+			{
+				if (index >= 0 && index < v_size)
+				{
+					PCB *act = pcbList[index];
+					if (act != NULL)
+						
+						runFunction(act); //Corre PCB
+						
+				}
+				else
+					printf("Error. indice no esta dentro del rango [0..%d]\n", v_size);
+			}
+
+			/*
+				Método que corre todos los PCB en lista
+			*/
+			void runAllFunctions()
+			{
+				for (int i = 0; i < PCB_count; i++)
+				{
+					runFunction_Index(i);
+				}
+
+				for (int j = 0; j < PCB_count; j++)
+				{
+					deletePCB(j); //Borra PCB
+>>>>>>> refs/remotes/origin/master
 				}
 			}
 
@@ -364,11 +559,19 @@ int main()
 	claseB::calling_function(privado);
 	kernel *newKernel = new kernel();
 
+<<<<<<< HEAD
 	newKernel->addPCB((int*)&function);
 	newKernel->addPCB((int*)&claseA::function);
 	newKernel->addPCB((int*)privado);
 	newKernel->runAllPCB();
 	//newKernel->~kernel();
+=======
+	newKernel->addToAvailable((int*)&function);
+	newKernel->addToAvailable((int*)&claseA::function);
+	newKernel->addToAvailable((int*)privado);
+	newKernel->runAllFunctions();
+	newKernel->~kernel();
+>>>>>>> refs/remotes/origin/master
 	#pragma endregion
 
 	#pragma region Proyecto 1

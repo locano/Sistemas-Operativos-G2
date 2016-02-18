@@ -1,2 +1,6 @@
 #TargetFrameworkVersion=v4.0:PlatformToolSet=v140:EnableManagedIncrementalBuild=false:VCToolArchitecture=Native32Bit:WindowsTargetPlatformVersion=8.1
+<<<<<<< HEAD
 Debug|Win32|C:\Users\ludwi\Desktop\Proyecto 2\Programa1\|
+=======
+Debug|Win32|C:\Users\ludwi\Documents\GitHub\SO-G2-Q\Sistemas-Operativos-G2\Proyectos\Proyecto 2\Programa1\|
+>>>>>>> refs/remotes/origin/master
