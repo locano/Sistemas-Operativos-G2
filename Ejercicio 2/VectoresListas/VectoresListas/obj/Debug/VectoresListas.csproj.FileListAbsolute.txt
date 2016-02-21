@@ -6,3 +6,5 @@ C:\Users\Pablo\Desktop\Sistemas-Operativos-G2\Ejercicio 2\VectoresListas\Vectore
 C:\Users\Pablo\Desktop\Sistemas-Operativos-G2\Ejercicio 2\VectoresListas\VectoresListas\obj\Debug\VectoresListas.csproj.GenerateResource.Cache
 C:\Users\Pablo\Desktop\Sistemas-Operativos-G2\Ejercicio 2\VectoresListas\VectoresListas\obj\Debug\VectoresListas.exe
 C:\Users\Pablo\Desktop\Sistemas-Operativos-G2\Ejercicio 2\VectoresListas\VectoresListas\obj\Debug\VectoresListas.pdb
+C:\Users\Gabriela\Documents\GitHub\Sistemas-Operativos-G2\Ejercicio 2\VectoresListas\VectoresListas\obj\Debug\VectoresListas.exe
+C:\Users\Gabriela\Documents\GitHub\Sistemas-Operativos-G2\Ejercicio 2\VectoresListas\VectoresListas\obj\Debug\VectoresListas.pdb
