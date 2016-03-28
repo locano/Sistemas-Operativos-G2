@@ -1,6 +1,6 @@
 // Programa1.cpp: define el punto de entrada de la aplicación de consola.
 //
-
+#pragma warning(disable:4996)
 #include "stdafx.h"
 #include "timer.h"
 #include "stdafx.h"
@@ -9,6 +9,8 @@
 #include <Windows.h>
 #include <thread>
 #include <cstdlib>
+#include <sstream>
+#include <vector>
 
 using namespace std;
 
@@ -32,6 +34,22 @@ using namespace std;
 #define LIMITE_ALCANZADO 1
 
 static bool conmutando = false;
+static int posicionIngresada = 1;
+
+static int currentQuantum = 1;
+static int defaultQuantum = 1;
+
+COORD cWhere;
+DWORD dwCharsWritten;
+HANDLE output;
+
+static void cleanPosition()
+{
+	wchar_t wtext[1];
+	wtext[0] = ' ';
+	LPWSTR ptr = wtext;
+	WriteConsoleOutputCharacter(output, ptr, 1, cWhere, &dwCharsWritten);
+}
 
 /*static void asignarThread(void* funcAddress) {
 	typedef void func(void);
@@ -49,13 +67,22 @@ private:
 
 public:
 	int estado;
+	bool debeMoverseAEspera = false;
+	bool debeMoverseAPreparado = false;
+	bool eliminar = false;
+	int posicion;
+	int quantum;
+	char caracter;
 	void* funcAddress;
 
-	PCB(void* fAddress, int nuevoID, int nuevoTipoProceso, int nuevoEstado) {
+	PCB(void* fAddress, int nuevoID, int nuevoTipoProceso, int nuevoEstado, int nQuantum, char nCaracter, int nPosicion) {
 		funcAddress = fAddress;
 		id = nuevoID;
 		tipoProceso = nuevoTipoProceso;
 		estado = nuevoEstado;
+		quantum = nQuantum;
+		caracter = nCaracter;
+		posicion = nPosicion;
 	}
 
 	void ejecutarFuncion() {
@@ -132,6 +159,20 @@ public:
 		else return NULL;
 	}
 
+	NODO_PCB* buscarNodoConChar(char caracter) {
+		if (head != NULL) {
+			NODO_PCB* temp = head;
+			while (temp != NULL) {
+				if (temp->data->caracter == caracter)
+					return temp;
+				else
+					temp = temp->next;
+			}
+			return NULL;
+		}
+		else return NULL;
+	}
+
 	NODO_PCB* quitarNodoConID(int id) {
 		if (head != NULL) {
 			NODO_PCB* temp = head;
@@ -144,7 +185,10 @@ public:
 					}
 					else { //Encontrado en medio o en el final
 						if (temp == tail) //Quitando la cola
+						{
 							tempPrev->next = NULL;
+							tail = tempPrev;
+						}
 						else
 							tempPrev->next = temp->next;
 					}
@@ -159,6 +203,48 @@ public:
 			return NULL;
 		}
 		else return NULL;
+	}
+
+	vector<int> idsParaEspera()
+	{
+		vector<int> ids;
+		if (head != NULL) {
+			NODO_PCB* temp = head;
+			while (temp != NULL) {
+				if (temp->data->debeMoverseAEspera)
+					ids.push_back(temp->data->getID());
+				temp = temp->next;
+			}
+		}
+		return ids;
+	}
+
+	vector<int> idsParaPreparados()
+	{
+		vector<int> ids;
+		if (head != NULL) {
+			NODO_PCB* temp = head;
+			while (temp != NULL) {
+				if (temp->data->debeMoverseAPreparado)
+					ids.push_back(temp->data->getID());
+				temp = temp->next;
+			}
+		}
+		return ids;
+	}
+
+	vector<int> idsParaEliminar()
+	{
+		vector<int> ids;
+		if (head != NULL) {
+			NODO_PCB* temp = head;
+			while (temp != NULL) {
+				if (temp->data->eliminar)
+					ids.push_back(temp->data->getID());
+				temp = temp->next;
+			}
+		}
+		return ids;
 	}
 };
 
@@ -180,8 +266,9 @@ public:
 		return id_correlativo;
 	}
 
-	void crearNuevoPCB(void* funcAddress, int tipoProceso) {
-		PCB* nuevoPCB = new PCB(funcAddress, getNextId(), tipoProceso, NUEVO);
+	void crearNuevoPCB(void* funcAddress, int tipoProceso, char caracter, int quantum) {
+		PCB* nuevoPCB = new PCB(funcAddress, getNextId(), tipoProceso, NUEVO, quantum, caracter, posicionIngresada);
+		posicionIngresada++;
 		if (tablaPCB->agregarNodo(nuevoPCB) != LIMITE_ALCANZADO)
 			nuevos->agregarNodo(nuevoPCB);
 	}
@@ -197,6 +284,27 @@ public:
 		PCB* pcbQuitado = ejecucion;
 		ejecucion = NULL;
 		esperando->agregarNodo(pcbQuitado);
+	}
+
+	void moverPCBAEspera(char caracter) {
+		NODO_PCB * pcb = tablaPCB->buscarNodoConChar(caracter);
+		if (pcb != NULL) {
+			pcb->data->debeMoverseAEspera = true;
+		}
+	}
+
+	void moverPCBDeEsperaAPreparado(char caracter) {
+		NODO_PCB * pcb = esperando->buscarNodoConChar(caracter);
+		if (pcb != NULL) {
+			pcb->data->debeMoverseAPreparado = true;
+		}
+	}
+
+	void eliminarPCB(char caracter) {
+		NODO_PCB * pcb = tablaPCB->buscarNodoConChar(caracter);
+		if (pcb != NULL) {
+			pcb->data->eliminar = true;
+		}
 	}
 
 	void moverEjecucionATerminado() {
@@ -219,98 +327,213 @@ public:
 	}
 
 	void ejecutar() {
-		ejecucion->ejecutarFuncion();
+		cleanPosition();
+		if (ejecucion != NULL)
+		{
+			int nuevaPosicion = ejecucion->posicion;
+			cWhere.X = nuevaPosicion - 1;
+			cWhere.Y = 0;
+			output = GetStdHandle(STD_OUTPUT_HANDLE);
+			ejecucion->ejecutarFuncion();
+		}
+		cleanPosition();
+	}
+
+	void eliminarProcesos() {
+		vector<int> idsParaEliminar = tablaPCB->idsParaEliminar();
+		for (int i = 0; i < idsParaEliminar.size(); i++)
+		{
+			PCB * pcb = tablaPCB->buscarNodoConID(idsParaEliminar[i])->data;
+			switch (pcb->estado) {
+				case PREPARADO:
+					preparados->quitarNodoConID(pcb->getID());
+					break;
+				case EN_ESPERA:
+					esperando->quitarNodoConID(pcb->getID());
+					break;
+				case EN_EJECUCION:
+					ejecucion = NULL;
+					break;
+				case NUEVO:
+					nuevos->quitarNodoConID(pcb->getID());
+					break;
+			}
+			pcb->estado = TERMINADO;
+			pcb->eliminar = false;
+			terminados->agregarNodo(pcb);
+		}
+	}
+
+	void cambiarQuantum(char caracter, int nuevoQuantum) {
+		NODO_PCB * nodo = tablaPCB->buscarNodoConChar(caracter);
+		if (nodo != NULL)
+		{
+			PCB * pcb = nodo->data;
+			pcb->quantum = nuevoQuantum;
+		}
 	}
 
 	void conmutar() {
+		//Terminar los procesos terminados
+		eliminarProcesos();
+
+		//Pasar de nuevos a preparados
 		NODO_PCB* nuevoNuevoNodo = nuevos->quitarHead();
-		
-		if (nuevoNuevoNodo != NULL) {
+		while (nuevoNuevoNodo != NULL) {
 			PCB* nuevoNuevo = nuevoNuevoNodo->data;
 			nuevoNuevo->estado = PREPARADO;
 			preparados->agregarNodo(nuevoNuevo);
+			nuevoNuevoNodo = nuevos->quitarHead();
 		}
 
-		NODO_PCB* nuevoEjecucionNodo = preparados->quitarHead();
-		if (nuevoEjecucionNodo != NULL) { //Sí hay PCB para ejecutar
-			PCB* nuevoEjecucion = nuevoEjecucionNodo ->data;
-			nuevoEjecucion->estado = EN_EJECUCION;
-			if (ejecucion != NULL) {
+		//Sacar de los preparados a espera
+		vector<int> paraEspera = preparados->idsParaEspera();
+		for (int i = 0; i < paraEspera.size(); i++)
+		{
+			NODO_PCB * quitado = preparados->quitarNodoConID(paraEspera[i]);
+			if (quitado != NULL)
+			{
+				PCB * pcbQuitado = quitado->data;
+				pcbQuitado->debeMoverseAEspera = false;
+				pcbQuitado->estado = EN_ESPERA;
+				esperando->agregarNodo(pcbQuitado);
+			}
+		}
+
+		//Sacar de espera a preparados
+		vector<int> paraPreparados = esperando->idsParaPreparados();
+		for (int i = 0; i < paraPreparados.size(); i++)
+		{
+			NODO_PCB * quitado = esperando->quitarNodoConID(paraPreparados[i]);
+			if (quitado != NULL)
+			{
+				PCB * pcbQuitado = quitado->data;
+				pcbQuitado->debeMoverseAPreparado = false;
+				pcbQuitado->estado = PREPARADO;
+				preparados->agregarNodo(pcbQuitado);
+			}
+		}
+		
+		//Pasar ejecución a preparados o espera
+		if (ejecucion != NULL) {
+			if (!ejecucion->debeMoverseAEspera)
+			{
 				ejecucion->estado = PREPARADO;
 				preparados->agregarNodo(ejecucion);
 			}
+			else
+			{
+				ejecucion->estado = EN_ESPERA;
+				ejecucion->debeMoverseAEspera = false;
+				esperando->agregarNodo(ejecucion);
+			}
+			ejecucion = NULL;
+		}
+
+		//De preparados a ejecución
+		NODO_PCB* nuevoEjecucionNodo = preparados->quitarHead();
+		if (nuevoEjecucionNodo != NULL) { //Sí hay PCB para ejecutar
+			PCB* nuevoEjecucion = nuevoEjecucionNodo->data;
+			nuevoEjecucion->estado = EN_EJECUCION;
 			ejecucion = nuevoEjecucion;
 		}
 	}
 };
 
-#pragma region Funciones estáticas
-static void funcion0(PCB* PCBEncargado)
+static void printChar(PCB* PCBEncargado)
 {
-	while(PCBEncargado->estado == EN_EJECUCION)
-		printf("\n\t 0-Kernel");
+	while (PCBEncargado->estado == EN_EJECUCION)
+	{
+		wchar_t wtext[1];
+		wtext[0] = PCBEncargado->caracter;
+		LPWSTR ptr = wtext;
+		WriteConsoleOutputCharacter(output, ptr, 1, cWhere, &dwCharsWritten);
+	}
 }
-
-static void funcion1(PCB* PCBEncargado)
-{
-	while(PCBEncargado->estado == EN_EJECUCION)
-		printf("\n\t 1-Func1");
-}
-
-static void funcion2(PCB* PCBEncargado)
-{
-	while(PCBEncargado->estado == EN_EJECUCION)
-		printf("\n\t 2-Func2");
-}
-#pragma endregion
 
 static KERNEL* kernel = new KERNEL();
 
-static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
-{
-	if (nCode >= 0)
-	{
-		if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
-		{
-
-			kernel->conmutar();
-			kernel->ejecutar();
-		}
-	}
-	//return CallNextHookEx(hHook, nCode, wParam, lParam);
-	return 1;
-}
-
 int main()
 {
-	kernel->crearNuevoPCB((void*)funcion0, PROC_KERNEL);
-	kernel->crearNuevoPCB((void*)funcion1, PROC_USUARIO);
-	kernel->crearNuevoPCB((void*)funcion2, PROC_USUARIO);
+	/*kernel->crearNuevoPCB((void*)printChar, PROC_KERNEL, 'a', defaultQuantum);
+	kernel->crearNuevoPCB((void*)printChar, PROC_USUARIO, 'b', defaultQuantum);
+	kernel->crearNuevoPCB((void*)printChar, PROC_USUARIO, 'c', defaultQuantum);*/
 
 	CTimer timer;
-	timer.Set(2000, 2000, []()
+	timer.Set(currentQuantum, currentQuantum, []()
 	{
 		kernel->conmutar();
+		if (kernel->ejecucion != NULL)
+			currentQuantum = kernel->ejecucion->quantum;
 		kernel->ejecutar();
 	});
 
-	kernel->conmutar();
-	kernel->ejecutar();
+	/*kernel->conmutar();
+	kernel->ejecutar();*/
 
-	
-	int c = 0;
+	COORD p = { 0, 5 };
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), p);
+
 	while (1)
 	{
-		c = 0;
-
-		switch ((c = _getch())) {
-		case 'f':
-			exit(1);
-			break;
+		string str;
+		getline(cin, str);
+		string arr[3];
+		int i = 0;
+		stringstream ssin(str);
+		while (ssin.good() && i < 3)
+		{
+			ssin >> arr[i];
+			i++;
+		}
+		if (arr[0] == "add")
+		{
+			char nuevaLetra = arr[1].at(0);
+			if (kernel->tablaPCB->buscarNodoConChar(nuevaLetra) == NULL)
+				kernel->crearNuevoPCB((void*)printChar, PROC_USUARIO, nuevaLetra, defaultQuantum);
+		}
+		else if (arr[0] == "pause")
+		{
+			char letraPausa = arr[1].at(0);
+			kernel->moverPCBAEspera(letraPausa);
+		}
+		else if (arr[0] == "unpause")
+		{
+			char letraPausa = arr[1].at(0);
+			kernel->moverPCBDeEsperaAPreparado(letraPausa);
+		}
+		else if (arr[0] == "remove")
+		{
+			char letraRemove = arr[1].at(0);
+			kernel->eliminarPCB(letraRemove);
+		}
+		else if (arr[0] == "quantum")
+		{
+			char letra = arr[1].at(0);
+			int nuevoQuantum = stoi(arr[2]);
+			kernel->cambiarQuantum(letra, nuevoQuantum);
 		}
 	}
 
 	return 0;
 }
+/*#pragma region Funciones estáticas
+static void funcion0(PCB* PCBEncargado)
+{
+while(PCBEncargado->estado == EN_EJECUCION)
+printf("\n\t 0-Kernel");
+}
 
+static void funcion1(PCB* PCBEncargado)
+{
+while(PCBEncargado->estado == EN_EJECUCION)
+printf("\n\t 1-Func1");
+}
+
+static void funcion2(PCB* PCBEncargado)
+{
+while(PCBEncargado->estado == EN_EJECUCION)
+printf("\n\t 2-Func2");
+}
+#pragma endregion*/
 
