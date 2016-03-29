@@ -34,7 +34,7 @@ public:
   }
 
  //Configuración del timer. Crea o alterna dependiendo si m_htimer tiene un valor.
-  HRESULT Set(DWORD dueTime,DWORD period,std::function<void()> callback)
+  HRESULT Set(DWORD dueTime, DWORD period, std::function<void()> callback)
   {
     if (m_hTimer == NULL)
     {

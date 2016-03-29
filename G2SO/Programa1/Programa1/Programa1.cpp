@@ -36,8 +36,8 @@ using namespace std;
 static bool conmutando = false;
 static int posicionIngresada = 1;
 
-static int currentQuantum = 1;
-static int defaultQuantum = 1;
+static int currentQuantum = 1000;
+static int defaultQuantum = 1000;
 
 COORD cWhere;
 DWORD dwCharsWritten;
@@ -452,24 +452,23 @@ static void printChar(PCB* PCBEncargado)
 }
 
 static KERNEL* kernel = new KERNEL();
+static CTimer timer;
+
+
+void callbackTimer() {
+	timer.Cancel();
+	kernel->conmutar();
+	if (kernel->ejecucion != NULL)
+		currentQuantum = kernel->ejecucion->quantum;
+	timer.Set(currentQuantum, currentQuantum, callbackTimer);
+	kernel->ejecutar();
+}
 
 int main()
 {
-	/*kernel->crearNuevoPCB((void*)printChar, PROC_KERNEL, 'a', defaultQuantum);
-	kernel->crearNuevoPCB((void*)printChar, PROC_USUARIO, 'b', defaultQuantum);
-	kernel->crearNuevoPCB((void*)printChar, PROC_USUARIO, 'c', defaultQuantum);*/
+	//timer.Set(currentQuantum, currentQuantum, callbackTimer);
 
-	CTimer timer;
-	timer.Set(currentQuantum, currentQuantum, []()
-	{
-		kernel->conmutar();
-		if (kernel->ejecucion != NULL)
-			currentQuantum = kernel->ejecucion->quantum;
-		kernel->ejecutar();
-	});
-
-	/*kernel->conmutar();
-	kernel->ejecutar();*/
+	callbackTimer();
 
 	COORD p = { 0, 5 };
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), p);
